@@ -1,18 +1,45 @@
 import { Box, Text, TextField, Image, Button } from "@skynexui/components";
 import React from "react";
 import appConfig from "../config.json";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/router";
+
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMyMDAzMCwiZXhwIjoxOTU4ODk2MDMwfQ.pUYeuSVdEayOBUEUBDWoQtPDAOqefPecQDn7Y-uE2pU";
+const SUPABASE_URL = "https://fgnfjnchuatmpxmiqblz.supabase.co";
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
   const [mensagem, setMensagem] = React.useState("");
   const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
+  const [atualizar, setAtualizar] = React.useState(false);
+  const roteamento = useRouter();
+
+  React.useEffect(() => {
+    supabaseClient
+      .from("mensagens")
+      .select("*")
+      .order("id", { ascending: false })
+      .then(({ data }) => {
+        console.log("Dados da consulta:", data);
+        setListaDeMensagens(data);
+      });
+  }, [atualizar]);
 
   function handleNovaMensagem(novaMensagem) {
     const mensagem = {
-      id: listaDeMensagens.length + 1,
-      de: "lucascurtinaz",
+      // id: listaDeMensagens.length + 1,
+      de: roteamento.query.name,
       texto: novaMensagem,
     };
-    setListaDeMensagens([mensagem, ...listaDeMensagens]);
+    supabaseClient
+      .from("mensagens")
+      .insert([mensagem])
+      .then(({ data }) => {
+        setListaDeMensagens([data[0], ...listaDeMensagens]);
+        setAtualizar(!atualizar);
+      });
+
     setMensagem("");
   }
 
@@ -212,7 +239,7 @@ function MessageList(props) {
                     display: "inline-block",
                     marginRight: "8px",
                   }}
-                  src={`https://github.com/lucascurtinaz.png`}
+                  src={`https://github.com/${mensagem.de}.png`}
                 />
                 <Text tag="strong">{mensagem.de}</Text>
                 <Text
@@ -226,7 +253,7 @@ function MessageList(props) {
                   {new Date().toLocaleDateString()}
                 </Text>
               </Box>
-              <Button
+              {/* <Button
                 onClick={() => handleExcluirMensagem(mensagem.id)}
                 type="button"
                 label="x"
@@ -239,7 +266,7 @@ function MessageList(props) {
                   height: "1.5rem",
                   color: "black",
                 }}
-              />
+              /> */}
             </Box>
             {mensagem.texto}
           </Text>
