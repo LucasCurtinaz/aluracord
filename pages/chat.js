@@ -3,6 +3,7 @@ import React from "react";
 import appConfig from "../config.json";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/router";
+import { ButtonSendSticker } from "../src/components/ButtonSendSticker";
 
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMyMDAzMCwiZXhwIjoxOTU4ODk2MDMwfQ.pUYeuSVdEayOBUEUBDWoQtPDAOqefPecQDn7Y-uE2pU";
@@ -12,19 +13,32 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export default function ChatPage() {
   const [mensagem, setMensagem] = React.useState("");
   const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
-  const [atualizar, setAtualizar] = React.useState(false);
   const roteamento = useRouter();
+
+  function escutaMensagensEmTempoReal(adicionaMensagem) {
+    return supabaseClient
+      .from("chat")
+      .on("INSERT", (respostaLive) => {
+        adicionaMensagem(respostaLive.new);
+      })
+      .subscribe();
+  }
 
   React.useEffect(() => {
     supabaseClient
-      .from("mensagens")
+      .from("chat")
       .select("*")
       .order("id", { ascending: false })
       .then(({ data }) => {
-        console.log("Dados da consulta:", data);
         setListaDeMensagens(data);
       });
-  }, [atualizar]);
+
+    escutaMensagensEmTempoReal((novaMensagem) => {
+      setListaDeMensagens((valorAtualDaLista) => {
+        return [novaMensagem, ...valorAtualDaLista];
+      });
+    });
+  }, []);
 
   function handleNovaMensagem(novaMensagem) {
     const mensagem = {
@@ -33,11 +47,10 @@ export default function ChatPage() {
       texto: novaMensagem,
     };
     supabaseClient
-      .from("mensagens")
+      .from("chat")
       .insert([mensagem])
       .then(({ data }) => {
-        setListaDeMensagens([data[0], ...listaDeMensagens]);
-        setAtualizar(!atualizar);
+        // setListaDeMensagens([data[0], ...listaDeMensagens]);
       });
 
     setMensagem("");
@@ -133,29 +146,42 @@ export default function ChatPage() {
                 color: appConfig.theme.colors.neutrals[200],
               }}
             />
-            <Button
-              onClick={() => {
-                if (mensagem) {
-                  handleNovaMensagem(mensagem);
-                }
-              }}
-              type="button"
-              label={
-                <Image src="https://upload.wikimedia.org/wikipedia/commons/2/24/Arrow-right-512.png" />
-              }
-              buttonColors={{
-                contrastColor: appConfig.theme.colors.neutrals["000"],
-                mainColor: appConfig.theme.colors.primary[500],
-                mainColorLight: appConfig.theme.colors.primary[400],
-                mainColorStrong: appConfig.theme.colors.primary[600],
-              }}
+            <Box
               styleSheet={{
-                width: "2.5rem",
-                height: "2.5rem",
-                borderRadius: "50%",
-                margin: "0 0 0.5rem 0",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
               }}
-            />
+            >
+              <ButtonSendSticker
+                onStickerClick={(sticker) => {
+                  handleNovaMensagem(`:sticker:${sticker}`);
+                }}
+              />
+              <Button
+                onClick={() => {
+                  if (mensagem) {
+                    handleNovaMensagem(mensagem);
+                  }
+                }}
+                type="button"
+                label={
+                  <Image src="https://upload.wikimedia.org/wikipedia/commons/2/24/Arrow-right-512.png" />
+                }
+                buttonColors={{
+                  contrastColor: appConfig.theme.colors.neutrals["000"],
+                  mainColor: appConfig.theme.colors.primary[500],
+                  mainColorLight: appConfig.theme.colors.primary[400],
+                  mainColorStrong: appConfig.theme.colors.primary[600],
+                }}
+                styleSheet={{
+                  width: "3.125rem",
+                  height: "3.125rem",
+                  borderRadius: "50%",
+                  margin: "0 0 0.5rem 0",
+                }}
+              />
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -268,7 +294,16 @@ function MessageList(props) {
                 }}
               /> */}
             </Box>
-            {mensagem.texto}
+            {mensagem.texto.startsWith(":sticker:") ? (
+              <Image
+                src={mensagem.texto.replace(":sticker:", "")}
+                styleSheet={{
+                  maxWidth: "200px",
+                }}
+              />
+            ) : (
+              mensagem.texto
+            )}
           </Text>
         );
       })}
