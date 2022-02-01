@@ -33,8 +33,7 @@ function Titulo(props) {
 // export default HomePage;
 
 export default function PaginaInicial() {
-  // const username = "lucascurtinaz";
-  const [username, setUsername] = React.useState("lucascurtinaz");
+  const [username, setUsername] = React.useState("");
   const roteamento = useRouter();
 
   return (
@@ -113,7 +112,6 @@ export default function PaginaInicial() {
             <TextField
               value={username}
               onChange={function handler(event) {
-                console.log("usuario digitou", event.target.value);
                 // Onde ta o valor?
                 const valor = event.target.value;
                 // Trocar o valor da variável

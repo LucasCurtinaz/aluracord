@@ -5,14 +5,16 @@ import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/router";
 import { ButtonSendSticker } from "../src/components/ButtonSendSticker";
 
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMyMDAzMCwiZXhwIjoxOTU4ODk2MDMwfQ.pUYeuSVdEayOBUEUBDWoQtPDAOqefPecQDn7Y-uE2pU";
-const SUPABASE_URL = "https://fgnfjnchuatmpxmiqblz.supabase.co";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
   const [mensagem, setMensagem] = React.useState("");
   const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
   const roteamento = useRouter();
 
   function escutaMensagensEmTempoReal(adicionaMensagem) {
@@ -32,12 +34,12 @@ export default function ChatPage() {
       .then(({ data }) => {
         setListaDeMensagens(data);
       });
-
     escutaMensagensEmTempoReal((novaMensagem) => {
       setListaDeMensagens((valorAtualDaLista) => {
         return [novaMensagem, ...valorAtualDaLista];
       });
     });
+    setLoading(!loading);
   }, []);
 
   function handleNovaMensagem(novaMensagem) {
@@ -97,12 +99,29 @@ export default function ChatPage() {
             padding: "16px",
           }}
         >
-          <MessageList
-            mensagens={listaDeMensagens}
-            setListaDeMensagens={(novasMensagens) =>
-              setListaDeMensagens(novasMensagens)
-            }
-          />
+          {!loading ? (
+            <Box
+              tag="ul"
+              styleSheet={{
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column-reverse",
+                flex: 1,
+                color: appConfig.theme.colors.neutrals["000"],
+                marginBottom: "16px",
+                maxHeight: "100%",
+              }}
+            >
+              Carregando...
+            </Box>
+          ) : (
+            <MessageList
+              mensagens={listaDeMensagens}
+              setListaDeMensagens={(novasMensagens) =>
+                setListaDeMensagens(novasMensagens)
+              }
+            />
+          )}
           {/* Lista de mensagens:
           {listaDeMensagens.map((mensagemAtual) => {
             return (
